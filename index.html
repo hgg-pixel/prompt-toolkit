@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Toolkit</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0a0a0a;color:#e0e0e0;max-width:700px;margin:0 auto;padding:16px}
+h1{font-size:1.5em;color:#fff;margin-bottom:2px}
+.subtitle{color:#888;font-size:.8em;margin-bottom:16px}
+.search{width:100%;padding:10px 14px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:.9em;margin-bottom:12px}
+.search:focus{outline:none;border-color:#4a9eff}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.tab{background:#1a1a1a;color:#888;border:1px solid #333;border-radius:16px;padding:5px 14px;font-size:.78em;cursor:pointer;transition:all .2s}
+.tab.active{background:#4a9eff;color:#000;border-color:#4a9eff}
+.cat{margin-bottom:20px}
+.cat-title{font-size:1em;color:#4a9eff;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #222;cursor:pointer;user-select:none}
+.cat-title::before{content:"▸ ";font-size:.8em}
+.cat-title.open::before{content:"▾ "}
+.cat-body{display:none}
+.cat-body.show{display:block}
+.term{background:#1a1a1a;border:1px solid #222;border-radius:10px;padding:12px;margin-bottom:8px}
+.term-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.term-name{font-weight:700;color:#fff;font-size:.92em}
+.term-en{color:#888;font-size:.78em}
+.term-desc{font-size:.82em;line-height:1.5;margin-bottom:6px;color:#ccc}
+.prompt-box{background:#111;border-left:3px solid #ce93d8;padding:6px 10px;border-radius:0 6px 6px 0;font-size:.8em;color:#e8b4f8;font-family:monospace;line-height:1.5;margin-top:4px;cursor:pointer;position:relative}
+.prompt-box:hover::after{content:"📋 click to copy";position:absolute;right:6px;top:4px;font-size:.7em;color:#888;font-family:sans-serif}
+.tag{display:inline-block;background:#222;color:#aaa;border-radius:4px;padding:1px 6px;font-size:.7em;margin-right:4px}
+.tag.img{border-color:#4a9eff;color:#4a9eff}
+.tag.vid{border-color:#51cf66;color:#51cf66}
+.tag.aud{border-color:#ffd43b;color:#ffd43b}
+.tag.ui{border-color:#ff6b6b;color:#ff6b6b}
+.count{background:#333;color:#888;font-size:.7em;padding:1px 6px;border-radius:8px;margin-left:6px}
+.footer{text-align:center;color:#444;font-size:.7em;margin-top:30px;padding:12px}
+</style>
+</head>
+<body>
+
+<h1>🎨 Prompt Toolkit</h1>
+<p class="subtitle">跨媒介 prompt 术语知识库 — 构成 · 光影 · 色彩 · 摄影 · 美术 · 影视 · 音乐 · 交互</p>
+
+<input class="search" type="text" id="search" placeholder="搜索术语 / Search terms..." oninput="filter()">
+
+<div class="tabs" id="tabs">
+<span class="tab active" data-f="all" onclick="setFilter(this)">全部</span>
+<span class="tab" data-f="composition" onclick="setFilter(this)">构成</span>
+<span class="tab" data-f="lighting" onclick="setFilter(this)">光影</span>
+<span class="tab" data-f="color" onclick="setFilter(this)">色彩</span>
+<span class="tab" data-f="photography" onclick="setFilter(this)">摄影</span>
+<span class="tab" data-f="art" onclick="setFilter(this)">美术</span>
+<span class="tab" data-f="film" onclick="setFilter(this)">影视</span>
+<span class="tab" data-f="music" onclick="setFilter(this)">音乐</span>
+<span class="tab" data-f="interaction" onclick="setFilter(this)">交互</span>
+</div>
+
+<div id="content"></div>
+
+<div class="footer">Prompt Toolkit · 持续更新中<br>点击紫色prompt框可复制</div>
+
+<script>
+const DB = [
+  // ===== COMPOSITION 构成 =====
+  {cat:"composition",name:"三分法",en:"Rule of Thirds",desc:"画面横竖各分三等份，主体放在四个交叉点或线上。最基础的构图法则。",prompt:"subject placed at rule-of-thirds intersection, off-center composition",tags:["img","vid"]},
+  {cat:"composition",name:"黄金比例",en:"Golden Ratio / Fibonacci Spiral",desc:"约1:1.618的比例关系。斐波那契螺旋引导视线从外向内旋入焦点。",prompt:"golden ratio composition, fibonacci spiral guiding the eye toward the subject",tags:["img"]},
+  {cat:"composition",name:"引导线",en:"Leading Lines",desc:"利用场景中的线条（路、河、栏杆、光束）将视线引向主体。",prompt:"strong leading lines converging toward the focal point, vanishing perspective",tags:["img","vid"]},
+  {cat:"composition",name:"负空间",en:"Negative Space",desc:"主体周围大面积留白/空旷区域。制造孤独感、呼吸感、极简张力。",prompt:"vast negative space surrounding a small subject, minimalist composition, isolated figure",tags:["img"]},
+  {cat:"composition",name:"框中框",en:"Frame within Frame",desc:"用门窗、拱门、树枝等天然框架嵌套主体，增加层次和窥视感。",prompt:"natural frame within frame, subject seen through an archway / doorway / window",tags:["img","vid"]},
+  {cat:"composition",name:"对称构图",en:"Symmetry",desc:"左右或上下镜像。传达秩序、庄严、不安（Kubrick式）。",prompt:"perfect bilateral symmetry, Kubrick-style centered composition",tags:["img","vid"]},
+  {cat:"composition",name:"对角线构图",en:"Diagonal Composition",desc:"主体或动线沿对角线分布。制造动感、不稳定、冲突感。",prompt:"dynamic diagonal composition, subject along the diagonal axis, sense of motion and tension",tags:["img","vid"]},
+  {cat:"composition",name:"视觉权重",en:"Visual Weight",desc:"元素的大小、颜色、对比度、细节密度决定其在画面中的\"重量\"。高权重吸引视线。",prompt:"high visual weight on subject through contrast and detail, muted background",tags:["img"]},
+  {cat:"composition",name:"层次/前中后景",en:"Foreground / Midground / Background",desc:"画面分三个深度层次。前景增加沉浸感，中景放主体，远景给空间感。",prompt:"layered composition with detailed foreground elements, subject in midground, atmospheric background",tags:["img","vid"]},
+  {cat:"composition",name:"头部空间/视线空间",en:"Headroom / Look Space",desc:"人物头顶留空间（headroom），面朝方向留空间（look space）。不留=压抑/紧张。",prompt:"generous look space in the direction the subject faces, balanced headroom",tags:["img","vid"]},
+
+  // ===== LIGHTING 光影 =====
+  {cat:"lighting",name:"伦勃朗光",en:"Rembrandt Lighting",desc:"45°侧上方打光，暗面颊骨处形成三角形亮区。经典人像光，戏剧感强。",prompt:"Rembrandt lighting, triangle of light on the shadow side of the face, dramatic chiaroscuro",tags:["img","vid"]},
+  {cat:"lighting",name:"蝴蝶光",en:"Butterfly / Paramount Lighting",desc:"正面偏上打光，鼻下形成蝴蝶形阴影。好莱坞黄金时代经典，显脸型。",prompt:"butterfly lighting, soft shadow under the nose, glamorous Hollywood portrait lighting",tags:["img"]},
+  {cat:"lighting",name:"轮廓光/边缘光",en:"Rim Light / Back Light",desc:"从主体后方打光，在边缘形成明亮光线轮廓。把主体从背景\"剥离\"出来。",prompt:"strong rim light separating the subject from dark background, glowing edges, backlit silhouette",tags:["img","vid"]},
+  {cat:"lighting",name:"明暗对照法",en:"Chiaroscuro",desc:"强烈的明暗对比。来自卡拉瓦乔。深黑背景+剧烈的光源=戏剧张力最大化。",prompt:"chiaroscuro lighting, deep shadows and bright highlights, Caravaggio-inspired, single dramatic light source",tags:["img"]},
+  {cat:"lighting",name:"丁达尔效应/体积光",en:"God Rays / Volumetric Light",desc:"光线穿过尘雾/树叶/窗户形成可见光束。神圣感、史诗感。",prompt:"god rays streaming through fog, volumetric lighting, crepuscular rays, ethereal atmosphere",tags:["img","vid"]},
+  {cat:"lighting",name:"环境光/散射光",en:"Ambient / Diffused Light",desc:"无明确方向的均匀软光。阴天、室内漫反射。柔和、无阴影、平静。",prompt:"soft diffused ambient light, overcast sky, no harsh shadows, even illumination",tags:["img","vid"]},
+  {cat:"lighting",name:"逆光剪影",en:"Silhouette / Backlit",desc:"主体完全处于逆光中变成黑色剪影。强调轮廓和形状，隐藏细节=神秘感。",prompt:"dramatic silhouette against bright backlight, figure outline only, golden hour backlit",tags:["img","vid"]},
+  {cat:"lighting",name:"色温对比",en:"Color Temperature Contrast",desc:"冷暖光源同时存在（如室内暖灯+窗外蓝光）。制造空间层次和情绪张力。",prompt:"warm-cool color temperature contrast, warm tungsten interior light against cool blue window light, mixed lighting",tags:["img","vid"]},
+  {cat:"lighting",name:"顶光",en:"Top Light / Overhead",desc:"正上方打光。眼窝/鼻下/下巴深阴影。审讯、不安、超自然。",prompt:"harsh overhead top light, deep eye socket shadows, ominous and unsettling mood",tags:["img","vid"]},
+  {cat:"lighting",name:"底光",en:"Under Light / Uplight",desc:"从下方打光。违反自然光方向=恐怖、怪异、超自然。",prompt:"eerie underlight illuminating the face from below, horror movie lighting, unnatural and unsettling",tags:["img","vid"]},
+  {cat:"lighting",name:"黄金时刻",en:"Golden Hour",desc:"日出后/日落前约30分钟。暖色低角度光，长投影，肤色最美。",prompt:"golden hour warm sunlight, long soft shadows, warm orange glow, magic hour cinematography",tags:["img","vid"]},
+  {cat:"lighting",name:"蓝色时刻",en:"Blue Hour",desc:"日落后/日出前的深蓝色天光。冷调、安静、忧郁。",prompt:"blue hour twilight, cool blue ambient light, serene melancholic atmosphere, no direct sunlight",tags:["img","vid"]},
+
+  // ===== COLOR 色彩 =====
+  {cat:"color",name:"互补色",en:"Complementary Colors",desc:"色轮对面的两个颜色（红-绿、蓝-橙、紫-黄）。最大对比，最强视觉冲击。",prompt:"complementary color palette, teal and orange contrast, vibrant opposing hues",tags:["img","vid"]},
+  {cat:"color",name:"类似色",en:"Analogous Colors",desc:"色轮上相邻的2-3个颜色。和谐、统一、柔和。",prompt:"analogous color harmony, warm tones of red-orange-gold, cohesive palette",tags:["img"]},
+  {cat:"color",name:"单色系",en:"Monochromatic",desc:"单一色相的不同明度和饱和度变化。极简、统一、情绪集中。",prompt:"monochromatic blue palette, varying shades and tints of a single hue, cohesive mood",tags:["img","vid"]},
+  {cat:"color",name:"去饱和/低饱和",en:"Desaturated / Muted",desc:"降低色彩鲜艳度。怀旧、忧郁、写实、电影感。",prompt:"desaturated muted color grading, low saturation, washed-out tones, melancholic atmosphere",tags:["img","vid"]},
+  {cat:"color",name:"高饱和",en:"Saturated / Vibrant",desc:"色彩鲜艳浓烈。活力、梦幻、超现实、视觉冲击。",prompt:"highly saturated vibrant colors, rich and punchy color palette, bold hues",tags:["img"]},
+  {cat:"color",name:"色彩分级",en:"Color Grading",desc:"后期调整整体色调。暗部偏青+亮部偏橙=电影标准look。",prompt:"cinematic color grading, teal shadows and warm highlights, film-grade color science",tags:["img","vid"]},
+  {cat:"color",name:"明度对比",en:"Value Contrast",desc:"亮暗的反差程度。高对比=力量感/戏剧性。低对比=柔和/梦幻。",prompt:"high value contrast, deep blacks and bright whites, strong tonal range",tags:["img"]},
+  {cat:"color",name:"色彩心理",en:"Color Psychology",desc:"红=激情/危险 蓝=冷静/忧郁 绿=自然/安全 黄=快乐/警示 紫=神秘/奢华 黑=权力/死亡 白=纯净/空虚",prompt:"[根据需要选色] warm red tones evoking passion and urgency / cool blue tones conveying calm and melancholy",tags:["img","vid","aud"]},
+
+  // ===== PHOTOGRAPHY 摄影 =====
+  {cat:"photography",name:"浅景深/虚化",en:"Shallow Depth of Field / Bokeh",desc:"大光圈（f/1.4-2.8）→ 主体清晰背景虚化。隔离主体、柔美、电影感。",prompt:"shallow depth of field, f/1.4 bokeh, subject in sharp focus with creamy blurred background",tags:["img","vid"]},
+  {cat:"photography",name:"深景深/全景深",en:"Deep Depth of Field",desc:"小光圈（f/11-16）→ 前后都清晰。风光、建筑、纪实。",prompt:"deep depth of field, everything in focus from foreground to background, f/11 landscape sharpness",tags:["img"]},
+  {cat:"photography",name:"长焦压缩",en:"Telephoto Compression",desc:"长焦镜头（85mm+）压缩前后距离感。背景拉近、人像立体、空间扁平化。",prompt:"telephoto lens compression, 200mm, compressed perspective, flattened spatial depth, isolated subject",tags:["img","vid"]},
+  {cat:"photography",name:"广角畸变",en:"Wide Angle Distortion",desc:"广角（24mm以下）夸大近大远小。空间感、冲击力、略带怪异。",prompt:"wide angle 16mm lens, exaggerated perspective distortion, dramatic spatial depth, barrel distortion",tags:["img","vid"]},
+  {cat:"photography",name:"微距",en:"Macro",desc:"极近距离拍摄。放大到看不见的世界。昆虫、水滴、纹理。",prompt:"macro photography, extreme close-up, razor-thin depth of field, intricate details visible",tags:["img"]},
+  {cat:"photography",name:"长曝光",en:"Long Exposure",desc:"慢快门（1s-30s+）。流水变丝绸、车灯拉光轨、星空变星轨。",prompt:"long exposure photography, silky smooth water, light trails, motion blur, 30 second shutter speed",tags:["img"]},
+  {cat:"photography",name:"高调/低调",en:"High Key / Low Key",desc:"高调=大面积亮、少阴影（干净明亮）。低调=大面积暗、少亮区（神秘深沉）。",prompt:"low key photography, predominantly dark tones, minimal highlights, moody and mysterious",tags:["img"]},
+  {cat:"photography",name:"颗粒/胶片感",en:"Film Grain",desc:"模拟胶片噪点。增加质感、怀旧感、有机感。数字照片的\"去数码味\"利器。",prompt:"analog film grain texture, 35mm film stock look, organic noise, Kodak Portra color rendition",tags:["img","vid"]},
+
+  // ===== ART 美术 =====
+  {cat:"art",name:"印象派",en:"Impressionism",desc:"可见笔触、光影变化、日常场景。莫奈/雷诺阿。捕捉瞬间印象而非精确再现。",prompt:"impressionist painting style, visible brushstrokes, dappled light, Monet-inspired color palette",tags:["img"]},
+  {cat:"art",name:"浮世绘",en:"Ukiyo-e",desc:"日本木版画。平面色彩、粗轮廓线、波浪和自然。葛饰北斋。",prompt:"ukiyo-e Japanese woodblock print style, flat color areas, bold outlines, Hokusai-inspired waves",tags:["img"]},
+  {cat:"art",name:"赛博朋克",en:"Cyberpunk",desc:"霓虹+雨夜+高楼+低生活。粉蓝紫主色调。Blade Runner美学。",prompt:"cyberpunk aesthetic, neon-lit rainy streets, pink and cyan neon signs, dystopian megacity, Blade Runner atmosphere",tags:["img","vid"]},
+  {cat:"art",name:"水彩",en:"Watercolor",desc:"水分扩散、透明叠色、纸张纹理、留白。轻盈、诗意、不完美的美。",prompt:"delicate watercolor painting, wet-on-wet technique, soft color bleeds, visible paper texture, translucent washes",tags:["img"]},
+  {cat:"art",name:"概念艺术",en:"Concept Art",desc:"为影视/游戏做的设计草图。注重氛围和想法传达，不追求完成度。",prompt:"concept art, painterly style, atmospheric mood painting, loose brushwork, environment design",tags:["img"]},
+  {cat:"art",name:"像素画",en:"Pixel Art",desc:"用离散像素手工绘制。复古游戏美学。限制=风格。",prompt:"pixel art style, 16-bit retro aesthetic, limited color palette, clean pixel-perfect edges",tags:["img"]},
+  {cat:"art",name:"Art Nouveau",en:"新艺术运动",desc:"有机曲线、花卉纹样、装饰性边框。Mucha风格。优雅繁复。",prompt:"Art Nouveau style, flowing organic curves, ornamental floral borders, Alphonse Mucha inspired, decorative illustration",tags:["img"]},
+  {cat:"art",name:"极简主义",en:"Minimalism",desc:"去掉一切多余。少量元素+大量空白+简单几何。",prompt:"minimalist design, clean geometric shapes, ample white space, reduced to essential elements only",tags:["img","ui"]},
+
+  // ===== FILM 影视 =====
+  {cat:"film",name:"特写",en:"Close-Up (CU)",desc:"面部填满画面。情绪放大器。观众被迫与角色共情。",prompt:"extreme close-up shot, face filling the frame, every emotion visible, intimate and intense",tags:["vid","img"]},
+  {cat:"film",name:"大远景",en:"Extreme Wide Shot (EWS)",desc:"人物在巨大环境中极小。渺小感、孤独感、史诗感。",prompt:"extreme wide shot, tiny figure in vast landscape, epic scale, emphasizing isolation and grandeur",tags:["vid","img"]},
+  {cat:"film",name:"荷兰角",en:"Dutch Angle / Tilted Shot",desc:"相机故意歪斜。不安、混乱、心理扭曲、紧张。",prompt:"Dutch angle tilted camera, disorienting composition, sense of unease and psychological tension",tags:["vid","img"]},
+  {cat:"film",name:"跟踪镜头",en:"Tracking Shot",desc:"摄影机随主体移动。沉浸感、陪伴感。长跟踪镜头=一镜到底的张力。",prompt:"smooth tracking shot following the subject, Steadicam movement, immersive continuous take",tags:["vid"]},
+  {cat:"film",name:"蒙太奇",en:"Montage",desc:"通过剪辑把不同镜头并置产生新含义。时间压缩/对比/节奏。",prompt:"montage sequence, rapid cuts between contrasting scenes, rhythmic editing, time compression",tags:["vid"]},
+  {cat:"film",name:"场面调度",en:"Mise-en-scène",desc:"画面内一切可见元素的安排：布景、道具、服装、灯光、演员位置。导演的\"画布控制\"。",prompt:"meticulous mise-en-scène, every element in frame deliberately placed, production design masterclass",tags:["vid","img"]},
+  {cat:"film",name:"浅焦/焦点转移",en:"Rack Focus",desc:"在一个镜头内从A焦点切换到B焦点。引导注意力、暗示关系变化。",prompt:"rack focus shifting from foreground to background subject, selective focus transition",tags:["vid"]},
+  {cat:"film",name:"鸟瞰/俯拍",en:"Bird's Eye / Top-Down",desc:"正上方90°往下拍。上帝视角、全知、几何美感、渺小感。",prompt:"bird's eye view, top-down overhead shot, geometric patterns visible, god's perspective",tags:["vid","img"]},
+
+  // ===== MUSIC 音乐 =====
+  {cat:"music",name:"大调/小调",en:"Major / Minor Key",desc:"大调=明亮、快乐、开放。小调=忧伤、紧张、内省。最基础的情绪开关。",prompt:"[major] bright uplifting melody in major key / [minor] melancholic minor key progression, introspective mood",tags:["aud"]},
+  {cat:"music",name:"和弦色彩",en:"Chord Color",desc:"sus2/sus4=悬浮不解决 · dim=紧张 · aug=不安 · 7th=爵士感 · add9=梦幻。",prompt:"dreamy add9 chords, suspended harmonies that never fully resolve, ethereal chord voicings",tags:["aud"]},
+  {cat:"music",name:"配器/编曲",en:"Orchestration / Arrangement",desc:"选什么乐器=定什么情绪。弦乐=情感 钢琴=内省 铜管=力量 合成器=未来 木吉他=温暖亲密。",prompt:"intimate solo piano arrangement / lush orchestral strings, sweeping cinematic score / warm acoustic guitar fingerpicking",tags:["aud"]},
+  {cat:"music",name:"BPM/速度",en:"Tempo / BPM",desc:"60-80=缓慢深沉 80-120=中速舒适 120-140=活力 140+=高能/紧张。",prompt:"slow tempo 70 BPM, contemplative pace / high energy 140 BPM, driving rhythm",tags:["aud"]},
+  {cat:"music",name:"混响空间",en:"Reverb / Space",desc:"大混响=教堂/大厅/空旷 干声=亲密/近距离/现场。空间感=情绪距离。",prompt:"vast cathedral reverb, ethereal spatial depth / dry intimate close-mic recording, present and raw",tags:["aud"]},
+  {cat:"music",name:"音色质感",en:"Timbre / Texture",desc:"Lo-fi=温暖复古 Hi-fi=清晰现代 饱和=温暖失真 清亮=数字精确。",prompt:"lo-fi warm analog texture, tape saturation, vinyl crackle / crisp hi-fi digital clarity, pristine sound",tags:["aud"]},
+  {cat:"music",name:"动态",en:"Dynamics",desc:"pp(极弱)→ff(极强)。突然的动态变化=情绪冲击。渐强=张力累积。",prompt:"dramatic dynamic range, whisper-quiet verse building to thunderous climax, crescendo tension",tags:["aud"]},
+  {cat:"music",name:"留白/静默",en:"Rest / Silence",desc:"音乐中的负空间。短暂停顿比任何和弦都有力——因为期待在填补空白。",prompt:"strategic use of silence, dramatic pauses between phrases, space as musical element",tags:["aud"]},
+
+  // ===== INTERACTION 交互 =====
+  {cat:"interaction",name:"缓动曲线",en:"Easing Curve",desc:"ease-in=慢启快停 ease-out=快启慢停 ease-in-out=两头慢中间快 spring=弹性过冲。自然感的核心。",prompt:"smooth ease-out animation, decelerating motion, natural physics-based movement",tags:["ui"]},
+  {cat:"interaction",name:"微交互",en:"Micro-interaction",desc:"按钮按下的弹性、开关的滑动、点赞的粒子爆发。小但让人上瘾的反馈。",prompt:"delightful micro-interaction, button press with subtle bounce, satisfying tactile feedback animation",tags:["ui"]},
+  {cat:"interaction",name:"视差滚动",en:"Parallax Scrolling",desc:"前景和背景以不同速度滚动。增加深度感和沉浸感。",prompt:"parallax scrolling effect, layered depth with foreground moving faster than background",tags:["ui"]},
+  {cat:"interaction",name:"骨架屏",en:"Skeleton Screen",desc:"内容加载前显示灰色占位块。比spinner好——用户能预判布局，降低等待焦虑。",prompt:"skeleton loading screen, gray placeholder blocks matching content layout, smooth fade-in reveal",tags:["ui"]},
+  {cat:"interaction",name:"反馈层级",en:"Feedback Hierarchy",desc:"操作成功=绿色/微弹 警告=黄色/震动 错误=红色/摇晃。视觉+动效+颜色三层反馈。",prompt:"multi-layered feedback system, success with green pulse, error with red shake, warning with amber glow",tags:["ui"]},
+  {cat:"interaction",name:"手势引导",en:"Gesture Affordance",desc:"UI元素暗示\"我可以被拖/滑/捏\"。不用教程，用户自然知道怎么操作。",prompt:"intuitive gesture affordance, drag handle visual cue, swipeable card with peek preview",tags:["ui"]}
+];
+
+const CAT_NAMES = {
+  composition:"构成",lighting:"光影",color:"色彩",photography:"摄影",
+  art:"美术",film:"影视",music:"音乐",interaction:"交互"
+};
+const TAG_LABELS = {img:"图像",vid:"视频",aud:"音频",ui:"交互"};
+
+let activeFilter = "all";
+
+function render(items){
+  const grouped = {};
+  items.forEach(t => {
+    if(!grouped[t.cat]) grouped[t.cat]=[];
+    grouped[t.cat].push(t);
+  });
+  const el = document.getElementById("content");
+  if(items.length===0){el.innerHTML='<p style="color:#555;text-align:center;padding:40px">无匹配结果</p>';return;}
+  el.innerHTML = Object.keys(grouped).map(cat => `
+    <div class="cat" data-cat="${cat}">
+      <div class="cat-title open" onclick="toggleCat(this)">${CAT_NAMES[cat]}<span class="count">${grouped[cat].length}</span></div>
+      <div class="cat-body show">
+        ${grouped[cat].map(t => `
+          <div class="term">
+            <div class="term-head">
+              <span class="term-name">${t.name}</span>
+              <span class="term-en">${t.en}</span>
+            </div>
+            <div class="term-desc">${t.desc}</div>
+            <div>${t.tags.map(tg => `<span class="tag ${tg}">${TAG_LABELS[tg]}</span>`).join("")}</div>
+            <div class="prompt-box" onclick="copyPrompt(this)">${t.prompt}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+}
+
+function filter(){
+  const q = document.getElementById("search").value.toLowerCase();
+  let items = DB;
+  if(activeFilter!=="all") items = items.filter(t=>t.cat===activeFilter);
+  if(q) items = items.filter(t => 
+    t.name.toLowerCase().includes(q) || 
+    t.en.toLowerCase().includes(q) || 
+    t.desc.toLowerCase().includes(q) ||
+    t.prompt.toLowerCase().includes(q) ||
+    t.tags.some(tg => tg.includes(q))
+  );
+  render(items);
+}
+
+function setFilter(el){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  el.classList.add("active");
+  activeFilter = el.dataset.f;
+  filter();
+}
+
+function toggleCat(el){
+  el.classList.toggle("open");
+  el.nextElementSibling.classList.toggle("show");
+}
+
+function copyPrompt(el){
+  navigator.clipboard.writeText(el.textContent).then(()=>{
+    el.style.borderLeftColor="#51cf66";
+    setTimeout(()=>el.style.borderLeftColor="#ce93d8",600);
+  });
+}
+
+render(DB);
+</script>
+</body>
+</html>
